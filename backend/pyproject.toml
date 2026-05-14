@@ -1,0 +1,26 @@
+[project]
+name = "task-board-backend"
+version = "0.1.0"
+description = "Multi-channel engineering task board"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.136.1",
+    "uvicorn[standard]>=0.46.0",
+    "aiohttp>=3.13.5",
+    "python-telegram-bot>=22.7",
+    "aioimaplib>=2.0.1",
+    "aiosmtplib>=5.1.0",
+    "pydantic-settings>=2.14.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "ruff>=0.15.12",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

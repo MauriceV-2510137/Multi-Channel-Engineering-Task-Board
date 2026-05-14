@@ -1,0 +1,16 @@
+# Env
+.env
+.env.*
+!.env.defaults
+
+# Python
+.venv/
+__pycache__/
+*.py[oc]
+
+# uv
+.uv/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,40 @@
+services:
+
+    backend:
+        build: ./backend
+        ports:
+            - "8000:8000"
+        env_file:
+            - .env          # Laadt TELEGRAM_BOT_TOKEN, keys, etc.
+        environment:
+            SMTP_HOST: greenmail
+            SMTP_PORT: 3025
+            IMAP_HOST: greenmail
+            IMAP_PORT: 3143
+        depends_on:
+            - greenmail
+        develop:
+            watch:
+                - action: sync+restart
+                  path: ./backend
+                  target: /app
+
+    frontend:
+        image: nginx:alpine
+        ports:
+            - "3000:80"
+        volumes:
+            - ./frontend:/usr/share/nginx/html:ro
+
+    greenmail:
+        image: greenmail/standalone:2.1.0
+        ports:
+            - "3025:3025" # SMTP
+            - "3143:3143" # IMAP
+            - "8080:8080" # Web UI
+        environment:
+            GREENMAIL_OPTS: >-
+                -Dgreenmail.setup.test.all
+                -Dgreenmail.hostname=0.0.0.0
+                -Dgreenmail.users=test:test@taskboard.local
+                -Dgreenmail.users.login=email
