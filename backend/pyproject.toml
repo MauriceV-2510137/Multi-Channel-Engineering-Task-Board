@@ -1,6 +1,6 @@
 [project]
 name = "task-board-backend"
-version = "0.1.0"
+version = "1.0.0"
 description = "Multi-channel engineering task board"
 requires-python = ">=3.14"
 dependencies = [
@@ -11,6 +11,7 @@ dependencies = [
     "aioimaplib>=2.0.1",
     "aiosmtplib>=5.1.0",
     "pydantic-settings>=2.14.1",
+    "httpx>=0.28.1",
 ]
 
 [dependency-groups]

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <span class="logo">⬡</span>
+      <h1 class="header-title">Task Board</h1>
+    </div>
+    <div class="header-right">
+      <div class="ws-indicator" id="ws-indicator">
+        <span class="ws-dot"></span>
+        <span class="ws-label" id="ws-label">Verbinden…</span>
+      </div>
+      <button class="btn-primary" id="btn-new-task">+ Nieuwe taak</button>
+    </div>
+  </header>
+
+  <!-- Main columns -->
+  <main class="board">
+    <section class="column" id="col-todo">
+      <div class="column-header">
+        <span class="column-title">Te doen</span>
+        <span class="column-count" id="count-todo">0</span>
+      </div>
+      <div class="task-list" id="list-todo"></div>
+    </section>
+
+    <div class="column-divider"></div>
+
+    <section class="column" id="col-done">
+      <div class="column-header">
+        <span class="column-title">Afgerond</span>
+        <span class="column-count" id="count-done">0</span>
+      </div>
+      <div class="task-list" id="list-done"></div>
+    </section>
+  </main>
+
+  <!-- Empty state -->
+  <div class="empty-state hidden" id="empty-state">
+    <span class="empty-icon">◫</span>
+    <p>Geen taken. Maak er een aan.</p>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-backdrop hidden" id="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Nieuwe taak</h2>
+        <button class="modal-close" id="modal-close" aria-label="Sluiten">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label class="field-label" for="input-title">Titel <span class="required">*</span></label>
+          <input class="field-input" id="input-title" type="text" placeholder="Wat moet er gebeuren?" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label class="field-label" for="input-location">Locatie</label>
+          <input class="field-input" id="input-location" type="text" placeholder="Bijv. Gent, Leuven…" autocomplete="off" />
+          <span class="field-hint" id="weather-hint"></span>
+        </div>
+        <div class="field">
+          <label class="field-label" for="input-deadline">Deadline</label>
+          <input class="field-input" id="input-deadline" type="datetime-local" />
+          <button class="clear-btn" id="btn-clear-deadline" type="button">Verwijder deadline</button>
+        </div>
+        <div class="field" id="field-status" style="display:none">
+          <label class="field-label" for="input-status">Status</label>
+          <select class="field-input" id="input-status">
+            <option value="todo">Te doen</option>
+            <option value="done">Afgerond</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span class="modal-error" id="modal-error"></span>
+        <button class="btn-ghost" id="btn-cancel">Annuleer</button>
+        <button class="btn-primary" id="btn-save">Opslaan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conflict modal -->
+  <div class="modal-backdrop hidden" id="conflict-backdrop">
+    <div class="modal modal-sm" role="alertdialog">
+      <div class="modal-header">
+        <h2 class="modal-title">⚡ Versieconflict</h2>
+      </div>
+      <div class="modal-body">
+        <p class="conflict-text">
+          Deze taak werd gewijzigd door een ander kanaal terwijl jij hem aan het bewerken was.<br/>
+          De pagina is bijgewerkt met de laatste versie.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="btn-conflict-ok">Begrepen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
