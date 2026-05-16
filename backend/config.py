@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     email_user: str = "test@taskboard.local"
     email_password: str = "test"
     email_address: str = "test@taskboard.local"
-    email_poll_interval: int = 10
+    email_poll_interval: int = 5
 
     # ----------------
     # Weather API

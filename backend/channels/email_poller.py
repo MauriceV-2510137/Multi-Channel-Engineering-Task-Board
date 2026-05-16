@@ -16,10 +16,12 @@ settings = get_settings()
 # Command handlers
 # ----------------
 async def _handle_mail(mail: IncomingMail) -> None:
-    """Parseer het subject als commando en voer het uit."""
     _, reply_to = parseaddr(mail.from_address)
     if not reply_to:
         reply_to = mail.from_address
+
+    # if reply_to.lower() == settings.email_address.lower():
+    #     return
 
     parts = mail.subject.strip().split(maxsplit=1)
     if not parts:
@@ -194,7 +196,6 @@ async def _cmd_list(reply_to: str) -> None:
 # Reply helper
 # ----------------
 async def _reply(to: str, subject: str, body: str) -> None:
-    """Stuur een bevestigingsmail"""
     try:
         await smtp_sender.send(to=to, subject=subject, body=body)
     except Exception:
@@ -219,7 +220,7 @@ async def _poll_loop() -> None:
 
 
 # ----------------
-# Lifecycle (zelfde patroon als start_broadcaster)
+# Lifecycle
 # ----------------
 def start_poller() -> asyncio.Task:
     return asyncio.create_task(_poll_loop())

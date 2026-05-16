@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.tasks import router as tasks_router
 from api.websocket import router as ws_router, start_broadcaster
+from api.mail import router as mail_router
 from config import get_settings
 
 from channels.telegram_bot import start_bot, stop_bot
@@ -57,6 +58,7 @@ app.add_middleware(
 # ----------------
 app.include_router(tasks_router, prefix="/tasks", tags=["tasks"])
 app.include_router(ws_router, prefix="/ws", tags=["websocket"])
+app.include_router(mail_router, prefix="/mail", tags=["mail"])
 
 
 @app.get("/")

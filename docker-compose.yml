@@ -5,7 +5,7 @@ services:
         ports:
             - "8000:8000"
         env_file:
-            - .env          # Laadt TELEGRAM_BOT_TOKEN, keys, etc.
+            - .env
         environment:
             SMTP_HOST: greenmail
             SMTP_PORT: 3025
