@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
-from models import Task, TaskCreate, TaskClear, TaskFields, TaskStatus
+from models import Task, TaskCreate, TaskUpdate, TaskStatus
 
 # ----------------
 # Custom exceptions
@@ -46,11 +46,11 @@ class TaskStore:
             self._tasks[task.id] = task
         return task
 
-    async def update(self, task_id: str, expected_version: int, fields: TaskFields, clear: TaskClear = TaskClear(),) -> Task:
+    async def update(self, task_id: str, expected_version: int, update: TaskUpdate) -> Task:
         async with self._lock:
             current = self._get_or_raise(task_id)
             self._check_version(current, expected_version)
-            updated = current.with_updates(fields, clear)
+            updated = current.with_updates(update)
             self._tasks[task_id] = updated
             return updated
 
@@ -59,13 +59,6 @@ class TaskStore:
             current = self._get_or_raise(task_id)
             self._check_version(current, expected_version)
             del self._tasks[task_id]
-
-    async def mark_done(self, task_id: str, expected_version: int) -> Task:
-        return await self.update(
-            task_id=task_id,
-            expected_version=expected_version,
-            fields=TaskFields(status=TaskStatus.DONE),
-        )
 
     # ----------------
     # Private helpers

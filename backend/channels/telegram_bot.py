@@ -1,18 +1,15 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 
 from telegram import Update
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    ContextTypes,
-)
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 from config import get_settings
-from models import TaskCreate, TaskFields, TaskStatus
-from services.task_service import TaskNotFound, VersionConflict, task_service
+from models import TaskStatus, TaskUpdate
+from services.command_service import TaskNotFound, VersionConflict, command_service
+from services.task_service import task_service
+from events import Channel
 
 settings = get_settings()
 
@@ -21,98 +18,111 @@ settings = get_settings()
 # Helpers
 # ----------------
 def _task_line(task) -> str:
-    """Één regel per taak voor in een lijst."""
     status_icon = "✅" if task.status == TaskStatus.DONE else "🔲"
     location = f" 📍 {task.location}" if task.location else ""
     return f"{status_icon} [{task.id[:8]}] {task.title}{location}"
 
 
 # ----------------
-# Command handlers
+# Commands
 # ----------------
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        "👋 Task Board bot\n\n"
+        "Task Board bot\n\n"
         "/list — alle taken tonen\n"
         "/add <titel> — taak aanmaken\n"
-        "/done <id> — taak als afgerond markeren\n"
+        "/done <id> — taak afronden\n"
         "/delete <id> — taak verwijderen"
     )
 
 
 async def cmd_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     tasks = await task_service.get_all()
+
     if not tasks:
-        await update.message.reply_text("📭 Geen taken gevonden.")
+        await update.message.reply_text("Geen taken gevonden.")
         return
 
     todo = [t for t in tasks if t.status == TaskStatus.TODO]
     done = [t for t in tasks if t.status == TaskStatus.DONE]
 
-    lines = []
+    lines: list[str] = []
+
     if todo:
-        lines.append("*Te doen*")
+        lines.append("Te doen")
         lines.extend(_task_line(t) for t in todo)
+
     if done:
         if lines:
             lines.append("")
-        lines.append("*Afgerond*")
+        lines.append("Afgerond")
         lines.extend(_task_line(t) for t in done)
 
-    await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+    await update.message.reply_text("\n".join(lines))
 
 
 async def cmd_add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    title = " ".join(context.args)
+    title = " ".join(context.args).strip()
+
     if not title:
-        await update.message.reply_text("❌ Gebruik: /add <titel>")
+        await update.message.reply_text("Gebruik: /add <titel>")
         return
 
-    task = await task_service.create_task(TaskCreate(title=title))
+    task = await command_service.create_task(
+        data=TaskCreate(title=title),
+        source=Channel.TELEGRAM,
+    )
+
     await update.message.reply_text(
-        f"✅ Taak aangemaakt!\n`{task.id[:8]}` — {task.title}",
-        parse_mode="Markdown",
+        f"Taak aangemaakt\n{task.id[:8]} — {task.title}"
     )
 
 
 async def cmd_done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:
-        await update.message.reply_text("❌ Gebruik: /done <id>")
+        await update.message.reply_text("Gebruik: /done <id>")
         return
 
     partial_id = context.args[0].lower()
 
-    # Zoek taak op basis van volledige of verkorte ID
     tasks = await task_service.get_all()
     matches = [t for t in tasks if t.id.startswith(partial_id)]
 
     if not matches:
-        await update.message.reply_text(f"❌ Geen taak gevonden met ID `{partial_id}`", parse_mode="Markdown")
+        await update.message.reply_text("Geen taak gevonden.")
         return
+
     if len(matches) > 1:
-        lines = ["⚠️ Meerdere taken gevonden, wees specifieker:"]
+        lines = ["Meerdere matches gevonden:"]
         lines.extend(_task_line(t) for t in matches)
         await update.message.reply_text("\n".join(lines))
         return
 
     task = matches[0]
+
     if task.status == TaskStatus.DONE:
-        await update.message.reply_text(f"ℹ️ Taak `{task.id[:8]}` is al afgerond.", parse_mode="Markdown")
+        await update.message.reply_text("Taak is al afgerond.")
         return
 
     try:
-        updated = await task_service.complete_task(task.id, task.version)
-        await update.message.reply_text(
-            f"✅ Afgerond: {updated.title}",
-            parse_mode="Markdown",
+        updated = await command_service.update_task(
+            task_id=task.id,
+            expected_version=task.version,
+            update=TaskUpdate(status=TaskStatus.DONE),
+            source=Channel.TELEGRAM,
         )
+
+        await update.message.reply_text(f"Afgerond: {updated.title}")
+
     except VersionConflict:
-        await update.message.reply_text("⚡ Versieconflict — probeer opnieuw.")
+        await update.message.reply_text("Versieconflict — probeer opnieuw.")
+    except TaskNotFound:
+        await update.message.reply_text("Taak niet gevonden.")
 
 
 async def cmd_delete(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:
-        await update.message.reply_text("❌ Gebruik: /delete <id>")
+        await update.message.reply_text("Gebruik: /delete <id>")
         return
 
     partial_id = context.args[0].lower()
@@ -121,20 +131,29 @@ async def cmd_delete(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     matches = [t for t in tasks if t.id.startswith(partial_id)]
 
     if not matches:
-        await update.message.reply_text(f"❌ Geen taak gevonden met ID `{partial_id}`", parse_mode="Markdown")
+        await update.message.reply_text("Geen taak gevonden.")
         return
+
     if len(matches) > 1:
-        lines = ["⚠️ Meerdere taken gevonden, wees specifieker:"]
+        lines = ["Meerdere matches gevonden:"]
         lines.extend(_task_line(t) for t in matches)
         await update.message.reply_text("\n".join(lines))
         return
 
     task = matches[0]
+
     try:
-        await task_service.delete_task(task.id, task.version)
-        await update.message.reply_text(f"🗑️ Verwijderd: {task.title}")
+        await command_service.delete_task(
+            task_id=task.id,
+            expected_version=task.version,
+            source=Channel.TELEGRAM,
+        )
+        await update.message.reply_text(f"Verwijderd: {task.title}")
+
     except VersionConflict:
-        await update.message.reply_text("⚡ Versieconflict — probeer opnieuw.")
+        await update.message.reply_text("Versieconflict — probeer opnieuw.")
+    except TaskNotFound:
+        await update.message.reply_text("Taak niet gevonden.")
 
 
 # ----------------
@@ -150,11 +169,7 @@ async def start_bot() -> None:
     if not token:
         return
 
-    _bot_app = (
-        Application.builder()
-        .token(token)
-        .build()
-    )
+    _bot_app = Application.builder().token(token).build()
 
     _bot_app.add_handler(CommandHandler("start", cmd_start))
     _bot_app.add_handler(CommandHandler("list", cmd_list))
@@ -164,7 +179,7 @@ async def start_bot() -> None:
 
     await _bot_app.initialize()
     await _bot_app.start()
-    await _bot_app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+    await _bot_app.updater.start_polling()
 
 
 async def stop_bot() -> None:

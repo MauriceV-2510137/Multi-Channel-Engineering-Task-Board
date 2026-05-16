@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from models import TaskCreate, TaskClear, TaskFields, TaskStatus
+from models import TaskCreate, TaskUpdate, TaskStatus
 
 # ----------------
 # Request schemas
@@ -25,24 +25,24 @@ class CreateTaskBody(BaseModel):
 
 class UpdateTaskBody(BaseModel):
     expected_version: int
+
     title: Optional[str] = None
     status: Optional[TaskStatus] = None
     location: Optional[str] = None
     deadline: Optional[datetime] = None
 
-    def to_domain(self) -> tuple[TaskFields, TaskClear]:
+    def to_domain(self) -> TaskUpdate:
         sent = self.model_fields_set
-        fields = TaskFields(
+
+        return TaskUpdate(
             title=self.title,
             status=self.status,
             location=self.location,
             deadline=self.deadline,
+
+            clear_location="location" in sent and self.location is None,
+            clear_deadline="deadline" in sent and self.deadline is None,
         )
-        clear = TaskClear(
-            location="location" in sent and self.location is None,
-            deadline="deadline" in sent and self.deadline is None,
-        )
-        return fields, clear
 
 
 class VersionBody(BaseModel):

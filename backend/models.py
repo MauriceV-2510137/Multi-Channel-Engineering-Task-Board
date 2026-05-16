@@ -9,7 +9,7 @@ from typing import Optional
 class TaskStatus(str, Enum):
     TODO = "todo"
     DONE = "done"
-    
+
 
 # ----------------
 # Value objects (structs)
@@ -21,22 +21,15 @@ class TaskCreate:
     location: Optional[str] = None
     deadline: Optional[datetime] = None
 
-
 @dataclass(frozen=True)
-class TaskFields:
-    """Partial update fields for an existing task (all optional)."""
+class TaskUpdate:
     title: Optional[str] = None
     status: Optional[TaskStatus] = None
     location: Optional[str] = None
     deadline: Optional[datetime] = None
 
-
-@dataclass(frozen=True)
-class TaskClear:
-    """Nullable velden expliciet op None zetten."""
-    location: bool = False
-    deadline: bool = False
-
+    clear_location: bool = False
+    clear_deadline: bool = False
 
 @dataclass(frozen=True)
 class Task:
@@ -73,13 +66,21 @@ class Task:
     # ----------------
     # Mutation helpers
     # ----------------
-    def with_updates(self, fields: TaskFields, clear: TaskClear = TaskClear()) -> "Task":
+    def with_updates(self, update: TaskUpdate) -> "Task":
         return replace(
             self,
-            title=fields.title if fields.title is not None else self.title,
-            status=fields.status if fields.status is not None else self.status,
-            location=None if clear.location else (fields.location if fields.location is not None else self.location),
-            deadline=None if clear.deadline else (fields.deadline if fields.deadline is not None else self.deadline),
+            title=update.title if update.title is not None else self.title,
+            status=update.status if update.status is not None else self.status,
+            location=(
+                None if update.clear_location
+                else update.location if update.location is not None
+                else self.location
+            ),
+            deadline=(
+                None if update.clear_deadline
+                else update.deadline if update.deadline is not None
+                else self.deadline
+            ),
             version=self.version + 1,
             updated_at=datetime.now(timezone.utc),
         )

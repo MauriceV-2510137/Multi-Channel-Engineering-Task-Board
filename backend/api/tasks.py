@@ -5,7 +5,10 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from integrations.weather import get_weather
 from api.schemas import CreateTaskBody, UpdateTaskBody, VersionBody
-from services.task_service import TaskNotFound, VersionConflict, task_service
+from services.command_service import TaskNotFound, VersionConflict, command_service
+from services.task_service import task_service
+from events import Channel
+from models import TaskUpdate, TaskStatus
 
 router = APIRouter()
 
@@ -43,7 +46,10 @@ async def list_tasks() -> list[dict]:
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_task(body: CreateTaskBody) -> dict:
-    task = await task_service.create_task(body.to_domain())
+    task = await command_service.create_task(
+        data=body.to_domain(),
+        source=Channel.WEB,
+    )
     return await _task_dict_with_weather(task)
 
 
@@ -58,13 +64,12 @@ async def get_task(task_id: str) -> dict:
 
 @router.patch("/{task_id}")
 async def update_task(task_id: str, body: UpdateTaskBody) -> dict:
-    fields, clear = body.to_domain()
     try:
-        task = await task_service.update_task(
+        task = await command_service.update_task(
             task_id=task_id,
             expected_version=body.expected_version,
-            fields=fields,
-            clear=clear,
+            update=body.to_domain(),
+            source=Channel.WEB,
         )
     except TaskNotFound:
         raise _not_found(task_id)
@@ -76,7 +81,14 @@ async def update_task(task_id: str, body: UpdateTaskBody) -> dict:
 @router.post("/{task_id}/complete")
 async def complete_task(task_id: str, body: VersionBody) -> dict:
     try:
-        task = await task_service.complete_task(task_id, body.expected_version)
+        task = await command_service.update_task(
+            task_id=task_id,
+            expected_version=body.expected_version,
+            update=TaskUpdate(
+                status=TaskStatus.DONE
+            ),
+            source=Channel.WEB,
+        )
     except TaskNotFound:
         raise _not_found(task_id)
     except VersionConflict as exc:
@@ -87,7 +99,11 @@ async def complete_task(task_id: str, body: VersionBody) -> dict:
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(task_id: str, expected_version: int = Query(..., description="Huidige versie van de taak")) -> None:
     try:
-        await task_service.delete_task(task_id, expected_version)
+        await command_service.delete_task(
+            task_id,
+            expected_version,
+            source=Channel.WEB,
+        )
     except TaskNotFound:
         raise _not_found(task_id)
     except VersionConflict as exc:

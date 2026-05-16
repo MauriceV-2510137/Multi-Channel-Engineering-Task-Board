@@ -13,8 +13,14 @@ from models import Task
 class EventType(str, Enum):
     TASK_CREATED = "task_created"
     TASK_UPDATED = "task_updated"
-    TASK_DELETED = "task_deleted"
     TASK_COMPLETED = "task_completed"
+    TASK_DELETED = "task_deleted"
+
+
+class Channel(str, Enum):
+    WEB = "web"
+    TELEGRAM = "telegram"
+    EMAIL = "email"
 
 
 @dataclass(frozen=True)
@@ -22,12 +28,14 @@ class TaskEvent:
     type: EventType
     task: Optional[Task]    # None for TASK_DELETED
     task_id: str
+    source: Channel
 
     def as_dict(self) -> dict:
         return {
             "type": self.type.value,
             "task": self.task.as_dict() if self.task is not None else None,
             "task_id": self.task_id,
+            "source": self.source.value,
         }
 
 

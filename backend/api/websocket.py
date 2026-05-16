@@ -58,10 +58,8 @@ async def _broadcast_events(bus: EventBus) -> None:
 # ----------------
 # Startup hook
 # ----------------
-_broadcaster_task: Optional[asyncio.Task] = None
-def start_broadcaster() -> None:
-    global _broadcaster_task
-    _broadcaster_task = asyncio.create_task(_broadcast_events(event_bus))
+def start_broadcaster() -> asyncio.Task:
+    return asyncio.create_task(_broadcast_events(event_bus))
 
 # ----------------
 # Endpoint
