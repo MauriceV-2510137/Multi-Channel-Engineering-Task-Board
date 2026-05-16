@@ -21,6 +21,7 @@ class IncomingMail:
     uid: str
     from_address: str
     subject: str
+    is_reply: bool = False
 
 
 @dataclass(frozen=True)
@@ -97,8 +98,14 @@ class ImapReader:
 
             from_address = _decode_mime(msg.get("From", ""))
             subject = _decode_mime(msg.get("Subject", ""))
+            is_reply = msg.get("X-TaskBoard-Reply", "").lower() == "true"
 
-            return IncomingMail(uid=uid, from_address=from_address, subject=subject)
+            return IncomingMail(
+                uid=uid,
+                from_address=from_address,
+                subject=subject,
+                is_reply=is_reply,
+            )
 
         except Exception:
             return None
@@ -179,9 +186,10 @@ class ImapReader:
 class SmtpSender:
     async def send(self, to: str, subject: str, body: str) -> None:
         msg = EmailMessage()
-        msg["From"]    = settings.email_address
-        msg["To"]      = to
+        msg["From"] = settings.email_address
+        msg["To"] = to
         msg["Subject"] = subject
+        msg["X-TaskBoard-Reply"] = "true"
         msg.set_content(body)
 
         await aiosmtplib.send(

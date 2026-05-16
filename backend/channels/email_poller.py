@@ -20,8 +20,8 @@ async def _handle_mail(mail: IncomingMail) -> None:
     if not reply_to:
         reply_to = mail.from_address
 
-    # if reply_to.lower() == settings.email_address.lower():
-    #     return
+    if mail.is_reply:
+        return
 
     parts = mail.subject.strip().split(maxsplit=1)
     if not parts:

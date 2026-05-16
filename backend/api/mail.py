@@ -47,4 +47,4 @@ async def get_inbox(limit: int = 30) -> list[dict]:
 
 @router.get("/address")
 async def get_address() -> dict:
-    return {"address": settings.bot_email}
+    return {"address": settings.email_address}
