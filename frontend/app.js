@@ -140,10 +140,6 @@ function renderCard(task) {
         : '';
     const versionTag = `<span class="meta-tag version">v${task.version}</span>`;
 
-    const completeBtn = task.status === 'todo'
-        ? `<button class="btn-icon complete" data-action="complete" data-id="${task.id}" data-version="${task.version}" title="Markeer als afgerond">✓</button>`
-        : '';
-
     return `
     <div class="task-card ${task.status === 'done' ? 'done' : ''}" data-id="${task.id}">
       <div class="task-card-top">

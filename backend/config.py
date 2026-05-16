@@ -29,11 +29,6 @@ class Settings(BaseSettings):
     email_poll_interval: int = 5
 
     # ----------------
-    # Weather API
-    # ----------------
-    weather_api_key: str = ""
-
-    # ----------------
     # App
     # ----------------
     app_host: str = "0.0.0.0"
