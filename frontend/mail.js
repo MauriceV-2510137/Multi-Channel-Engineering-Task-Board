@@ -127,22 +127,45 @@ function renderInbox() {
 
     empty.classList.add('hidden');
 
-    // Bewaar welke cards open staan (op uid) zodat expand-staat behouden blijft bij refresh
-    const expanded = new Set(
-        [...list.querySelectorAll('.mail-card.expanded')].map(el => el.dataset.uid)
+    // Map van uid → bestaand DOM-element
+    const existingCards = new Map(
+        [...list.querySelectorAll('.mail-card')].map(el => [el.dataset.uid, el])
     );
 
-    list.innerHTML = state.messages.map(msg => renderMailCard(msg, expanded.has(msg.uid))).join('');
+    // UIDs die de server nu teruggeeft
+    const newUidSet = new Set(state.messages.map(m => m.uid));
 
-    // Expand/collapse kliklisteners toevoegen
-    list.querySelectorAll('.mail-card-header').forEach(header => {
-        header.addEventListener('click', () => {
-            header.closest('.mail-card').classList.toggle('expanded');
-        });
+    // Verwijder cards die niet meer in de inbox zitten
+    existingCards.forEach((el, uid) => {
+        if (!newUidSet.has(uid)) el.remove();
     });
+
+    // Bouw de lijst opnieuw op in de juiste volgorde.
+    // Bestaande cards worden verplaatst (geen re-render, geen animatie).
+    // Nieuwe cards worden aangemaakt met .is-new voor de animatie.
+    const fragment = document.createDocumentFragment();
+    for (const msg of state.messages) {
+        if (existingCards.has(msg.uid)) {
+            // Bestaand element hergebruiken — expanded-staat blijft behouden
+            fragment.appendChild(existingCards.get(msg.uid));
+        } else {
+            // Nieuw bericht — aanmaken en animeren
+            const el = createMailCardElement(msg);
+            el.classList.add('is-new');
+            fragment.appendChild(el);
+        }
+    }
+    list.appendChild(fragment);
 }
 
-function renderMailCard(msg, startExpanded = false) {
+// Maakt een .mail-card DOM-element aan vanuit een berichtobject.
+function createMailCardElement(msg) {
+    const temp = document.createElement('div');
+    temp.innerHTML = renderMailCard(msg);
+    return temp.firstElementChild;
+}
+
+function renderMailCard(msg) {
     const date = formatDate(msg.date);
     const isReply = detectReply(msg.subject, msg.from_address);
     const typeClass = isReply ? 'reply' : 'command';
@@ -153,9 +176,9 @@ function renderMailCard(msg, startExpanded = false) {
         : '<span class="mail-body-empty">Geen berichttekst</span>';
 
     return `
-<div class="mail-card ${typeClass}${startExpanded ? ' expanded' : ''}" data-uid="${escHtml(msg.uid)}" role="listitem">
+<div class="mail-card ${typeClass}" data-uid="${escHtml(msg.uid)}" role="listitem">
   <div class="mail-card-header" tabindex="0" role="button"
-       aria-expanded="${startExpanded}"
+       aria-expanded="false"
        aria-label="${escHtml(msg.subject)}">
     <div class="mail-card-top">
       <span class="mail-type-badge ${typeClass}">${typeLabel}</span>
@@ -304,11 +327,22 @@ async function init() {
     document.getElementById('btn-send').addEventListener('click', sendMail);
     document.getElementById('btn-refresh').addEventListener('click', loadInbox);
 
+    // ---- Expand/collapse via event delegation (één listener voor alle cards, ook toekomstige) ----
+    document.getElementById('mail-list').addEventListener('click', e => {
+        const header = e.target.closest('.mail-card-header');
+        if (!header) return;
+        const card = header.closest('.mail-card');
+        const expanded = card.classList.toggle('expanded');
+        header.setAttribute('aria-expanded', expanded);
+    });
+
     // ---- Keyboard: spatie/enter op mail-card-header ----
     document.getElementById('mail-list').addEventListener('keydown', e => {
         if ((e.key === ' ' || e.key === 'Enter') && e.target.matches('.mail-card-header')) {
             e.preventDefault();
-            e.target.closest('.mail-card').classList.toggle('expanded');
+            const card = e.target.closest('.mail-card');
+            const expanded = card.classList.toggle('expanded');
+            e.target.setAttribute('aria-expanded', expanded);
         }
     });
 

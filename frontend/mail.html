@@ -13,45 +13,6 @@
     <link rel="stylesheet" href="style.css" />
     <style>
         /* ===========================
-       Nav
-       =========================== */
-        .nav {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 0.2rem;
-        }
-
-        .nav-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.3rem 0.75rem;
-            border-radius: 4px;
-            font-family: var(--font-ui);
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--text-3);
-            text-decoration: none;
-            transition: background var(--transition), color var(--transition);
-            letter-spacing: 0.02em;
-        }
-
-        .nav-link:hover {
-            color: var(--text-2);
-            background: var(--surface);
-        }
-
-        .nav-link.active {
-            background: var(--bg);
-            color: var(--text);
-            box-shadow: var(--shadow-sm);
-        }
-
-        /* ===========================
        Mail layout (two-column)
        =========================== */
         .mail-layout {
@@ -224,6 +185,9 @@
             border-radius: var(--radius);
             overflow: hidden;
             transition: border-color var(--transition);
+        }
+
+        .mail-card.is-new {
             animation: card-in 200ms ease both;
         }
 

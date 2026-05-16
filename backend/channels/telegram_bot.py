@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from config import get_settings
-from models import TaskStatus, TaskUpdate
+from models import TaskCreate, TaskUpdate, TaskStatus
 from services.command_service import TaskNotFound, VersionConflict, command_service
 from services.task_service import task_service
 from events import Channel

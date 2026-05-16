@@ -87,7 +87,7 @@ class ImapReader:
 
     async def _fetch_one(self, client: aioimaplib.IMAP4, uid: str) -> IncomingMail | None:
         try:
-            typ, data = await client.fetch(uid, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT)])")
+            typ, data = await client.fetch(uid, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT X-TASKBOARD-REPLY)])")
             if typ != "OK" or len(data) < 2:
                 return None
 
@@ -163,8 +163,8 @@ class ImapReader:
             msg = message_from_bytes(raw)
 
             from_address = _decode_mime(msg.get("From", ""))
-            subject     = _decode_mime(msg.get("Subject", ""))
-            date        = msg.get("Date", "")
+            subject = _decode_mime(msg.get("Subject", ""))
+            date = msg.get("Date", "")
 
             body = _extract_text(msg)
 
@@ -184,12 +184,13 @@ class ImapReader:
 # SMTP sender
 # ----------------
 class SmtpSender:
-    async def send(self, to: str, subject: str, body: str) -> None:
+    async def send(self, to: str, subject: str, body: str, is_reply: bool = False) -> None:
         msg = EmailMessage()
         msg["From"] = settings.email_address
         msg["To"] = to
         msg["Subject"] = subject
-        msg["X-TaskBoard-Reply"] = "true"
+        if is_reply:
+            msg["X-TaskBoard-Reply"] = "true"
         msg.set_content(body)
 
         await aiosmtplib.send(

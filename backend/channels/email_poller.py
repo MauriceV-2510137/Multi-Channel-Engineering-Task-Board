@@ -197,7 +197,7 @@ async def _cmd_list(reply_to: str) -> None:
 # ----------------
 async def _reply(to: str, subject: str, body: str) -> None:
     try:
-        await smtp_sender.send(to=to, subject=subject, body=body)
+        await smtp_sender.send(to=to, subject=subject, body=body, is_reply=True)
     except Exception:
         pass
 
